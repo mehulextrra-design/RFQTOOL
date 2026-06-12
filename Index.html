@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>InsureQuote · Role-Based RFQ Matrix Studio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f0f2f5;--white:#fff;--surf:#f8f9fb;
+  --bdr:#dde1e9;--bdr-l:#eaecf2;
+  --grn:#1a7f4e;--grn-bg:#e8f5ee;--grn-dk:#0f4f30;
+  --blue:#0f6fd1;--blue-bg:#e8f2fd;--blue-dk:#1a56a0;--blue-p-bg:#dbeafe;
+  --red:#c0392b;--red-bg:#fdf2f0;
+  --ora:#d97706;--ora-bg:#fffbeb;
+  --txt:#0f172a;--txt2:#334155;--txt3:#64748b;--txt4:#94a3b8;
+  --sh:0 1px 3px rgba(0,0,0,.08);--sh-md:0 4px 16px rgba(0,0,0,.10);--r:8px;
+}
+html,body{height:100vh;background:var(--bg);color:var(--txt);font-family:'Inter',sans-serif;font-size:13px;overflow:hidden;-webkit-font-smoothing:antialiased}
+
+/* TOP BAR */
+#tb{height:42px;background:var(--grn);display:flex;align-items:center;padding:0 16px;gap:8px;box-shadow:0 2px 6px rgba(0,0,0,.15);flex-shrink:0}
+.logo-w{display:flex;align-items:center;gap:9px}
+.logo-i{width:26px;height:26px;background:rgba(255,255,255,.18);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:14px}
+.logo-n{color:#fff;font-weight:700;font-size:13px}
+.logo-s{color:rgba(255,255,255,.6);font-size:11px;margin-left:2px}
+#tb .tr{margin-left:auto;display:flex;gap:12px;align-items:center}
+.tbadge{background:rgba(255,255,255,.15);color:#fff;border:1px solid rgba(255,255,255,.2);border-radius:14px;padding:3px 11px;font-size:11px;font-weight:500;cursor:pointer}
+.tbadge:hover{background:rgba(255,255,255,.25)}
+
+/* ROLE CONTROLLER DROPDOWN */
+.role-wrapper {display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.2);padding:2px 8px;border-radius:6px;border:1px solid rgba(255,255,255,0.15)}
+.role-lbl {color:#fff;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.02em}
+.role-select {background:#fff;border:none;border-radius:4px;padding:2px 6px;font-size:11px;font-weight:700;color:var(--grn-dk);outline:none;cursor:pointer}
+
+/* LAYOUT */
+#app{display:flex;flex-direction:column;height:calc(100vh - 42px);overflow:hidden}
+#sb{background:var(--white);border-bottom:1px solid var(--bdr);height:36px;display:flex;align-items:center;padding:0 16px;gap:0;flex-shrink:0}
+.stp{display:flex;align-items:center;gap:5px;height:100%;padding:0 11px;border-bottom:2px solid transparent;cursor:pointer;font-size:11px;color:var(--txt3);white-space:nowrap;transition:all .12s}
+.stp:hover{color:var(--txt)}
+.stp.on{color:var(--grn);border-bottom-color:var(--grn);font-weight:600}
+.stp.dn{color:var(--grn-dk)}
+.stp .sn{width:18px;height:18px;border-radius:50%;background:var(--surf);color:var(--txt3);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.stp.on .sn{background:var(--grn);color:#fff}
+.stp.dn .sn{background:var(--grn-bg);color:var(--grn-dk)}
+.sa{color:var(--txt4);font-size:11px;margin:0 1px}
+
+/* PANELS */
+#panels{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.panel{display:none;flex:1;overflow-y:auto;padding:12px 16px;flex-direction:column;gap:12px}
+.panel.on{display:flex}
+#p3{padding:0!important;overflow:hidden!important;display:none;flex-direction:column;background:#ffffff}
+#p3.on{display:flex}
+#p4{display:none;flex:1;overflow-y:auto;padding:16px;flex-direction:column;gap:16px;background:var(--bg)}
+#p4.on{display:flex}
+
+/* TRACKER TABLE STYLES */
+.tracker-card {background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh);margin-bottom:8px;}
+.tracker-tbl-wrap {width:100%;overflow-x:auto;}
+.tracker-tbl {width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.tracker-tbl th {background:#f1f5f9;padding:10px 12px;font-weight:600;color:var(--txt2);border-bottom:2px solid var(--bdr)}
+.tracker-tbl td {padding:10px 12px;border-bottom:1px solid var(--bdr-l);color:var(--txt);vertical-align:middle}
+
+/* PIPELINE STATUS BADGES */
+.status-pill {padding:3px 8px;border-radius:12px;font-size:10px;font-weight:700;text-transform:uppercase;display:inline-block;}
+.status-pending {background:var(--ora-bg);color:var(--ora);border:1px solid #fde68a;}
+.status-quoted {background:var(--grn-bg);color:var(--grn-dk);border:1px solid #a7d9bc;}
+.status-declined {background:var(--red-bg);color:var(--red);border:1px solid #fca5a5;}
+
+/* UPLOAD */
+#upz{background:var(--white);border:2px dashed var(--bdr);border-radius:10px;padding:22px 24px;text-align:center;cursor:pointer;transition:all .18s;box-shadow:var(--sh)}
+#upz:hover,#upz.drag{border-color:var(--grn);background:var(--grn-bg)}
+.ui{font-size:30px;margin-bottom:6px;display:block}
+.ut{font-size:14px;font-weight:700;color:var(--txt);margin-bottom:4px}
+.us{font-size:11px;color:var(--txt3)}
+
+/* GLOBAL FILE CONTROLLER dropdown style */
+.f-ctrl{display:flex;align-items:center;gap:10px;background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:10px 14px;margin-bottom:6px;box-shadow:var(--sh)}
+.f-lbl{font-weight:700;color:var(--txt2);font-size:11px;text-transform:uppercase;letter-spacing:0.04em}
+.f-select{flex:1;height:30px;border:1px solid var(--bdr);border-radius:5px;padding:0 8px;font-size:12px;font-weight:600;color:var(--grn-dk);outline:none;background:var(--surf);cursor:pointer}
+.f-select:focus{border-color:var(--grn)}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden;box-shadow:var(--sh)}
+.ch{padding:7px 12px;background:var(--surf);border-bottom:1px solid var(--bdr);display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ct{font-weight:600;font-size:12px;display:flex;align-items:center;gap:5px}
+.cb{padding:10px 12px}
+
+/* SHEET SELECTOR TABS */
+.sheet-sel{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px}
+.ss-tab{padding:5px 12px;border:1px solid var(--bdr);border-radius:5px;background:var(--white);cursor:pointer;font-size:11px;font-weight:500;color:var(--txt3);transition:all .12s;display:flex;align-items:center;gap:5px}
+.ss-tab:hover{border-color:var(--grn);color:var(--grn);background:var(--grn-bg)}
+.ss-tab.on{background:var(--grn);border-color:var(--grn-dk);color:#fff}
+.ss-tab .cnt{font-size:10px;background:rgba(255,255,255,.25);border-radius:8px;padding:1px 6px}
+.ss-tab:not(.on) .cnt{background:var(--grn-bg);color:var(--grn-dk)}
+
+/* WORKSPACE CONTAINERS */
+.shp{display:none;flex-direction:column;gap:12px}.shp.on{display:flex}
+
+/* SECTION SEPARATORS */
+.sdiv{display:flex;align-items:center;gap:6px;margin:5px 0 2px}
+.sdiv-line{flex:1;height:1px;background:var(--bdr-l)}
+.sdiv-txt{font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;white-space:nowrap}
+
+/* STATUS BLOCKS & PILLS */
+.rmk-status{background:var(--surf);border:1px solid var(--bdr-l);border-radius:6px;padding:8px 12px;margin-bottom:4px}
+.rmk-status .title{font-size:11px;font-weight:600;color:var(--txt);margin-bottom:6px;display:flex;align-items:center;gap:5px;flex-wrap:wrap}
+.rmk-rows{display:flex;flex-direction:column;gap:3px;max-height:150px;overflow-y:auto;border:1px solid var(--bdr-l);border-radius:4px;background:#fff;padding:4px}
+.rmk-row{display:flex;align-items:center;gap:7px;padding:4px 6px;border-radius:3px;font-size:11px}
+.rmk-row:hover{background:var(--bdr-l)}
+.rmk-cover{flex:1;color:var(--txt2)}
+.rmk-val{font-weight:600;padding:2px 8px;border-radius:8px;font-size:10px;white-space:nowrap}
+.rv-cov{background:var(--grn-bg);color:var(--grn-dk)}
+.rv-not{background:var(--red-bg);color:var(--red)}
+.rv-pol{background:var(--blue-p-bg);color:var(--blue-dk)}
+.rv-par{background:var(--ora-bg);color:var(--ora)}
+.rv-mis{background:#fef3c7;color:#92400e;font-style:italic}
+.pills-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.pill{padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600;display:flex;align-items:center;gap:4px}
+.pill-g{background:var(--grn-bg);color:var(--grn-dk)}
+.pill-o{background:var(--ora-bg);color:var(--ora)}
+
+/* CONTROL ACTIONS STYLE */
+.prods{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px}
+.pb{padding:4px 11px;border:1px solid var(--bdr);border-radius:5px;background:var(--white);cursor:pointer;font-family:'Inter',sans-serif;font-size:11px;color:var(--txt2);transition:all .1s;font-weight:500}
+.pb:hover{border-color:var(--grn);color:var(--grn);background:var(--grn-bg)}
+.pb.sel{background:var(--grn);border-color:var(--grn-dk);color:#fff}
+.ita{width:100%;border:1px solid var(--bdr);border-radius:5px;padding:7px 9px;font-family:'JetBrains Mono',monospace;font-size:11px;resize:vertical;min-height:70px;outline:none;line-height:1.6;color:var(--txt);margin-bottom:4px}
+.ita:focus{border-color:var(--grn)}
+.irow{display:flex;align-items:center;gap:6px;flex-wrap:wrap;background:var(--surf);padding:6px 10px;border-radius:6px;border:1px solid var(--bdr-l)}
+.ilbl{font-size:11px;color:var(--txt3);white-space:nowrap}
+.iinp{height:26px;border:1px solid var(--bdr);border-radius:4px;padding:0 7px;font-family:'JetBrains Mono',monospace;font-size:11px;width:58px;text-align:center;color:var(--grn);font-weight:700;text-transform:uppercase;outline:none}
+.iinp:focus{border-color:var(--grn)}
+.btn{padding:5px 13px;border:none;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:11px;display:inline-flex;align-items:center;gap:4px;transition:all .1s}
+.bg{background:var(--grn);color:#fff}.bg:hover{background:var(--grn-dk)}
+.br{background:var(--red);color:#fff}.br:hover{background:#a02619}
+.bs{background:var(--surf);color:var(--txt2);border:1px solid var(--bdr)}.bs:hover{background:var(--bdr-l)}
+.bl{padding:7px 20px;font-size:12px}
+.ded-box{border:1px solid var(--bdr);border-radius:5px;padding:8px 12px;margin-bottom:4px;background:var(--surf)}
+.ded-prod{background:var(--ora-bg);color:var(--ora);padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700}
+.ded-sec{font-size:11px;font-weight:600;color:var(--txt2);margin-left:6px}
+.ded-txt{font-size:11px;color:var(--txt);margin-top:4px;font-family:'JetBrains Mono',monospace;background:#fff;padding:6px;border:1px solid var(--bdr-l);border-radius:4px}
+.navrow{display:flex;justify-content:space-between;align-items:center;margin-top:10px;padding-top:6px;border-top:1px solid var(--bdr-l)}
+
+/* DATABASE CONFIG STYLES */
+.db-tbl{width:100%;border-collapse:collapse;font-size:12px}
+.db-tbl th{background:var(--surf);padding:6px 11px;text-align:left;font-size:10px;font-weight:600;color:var(--txt3);letter-spacing:.05em;text-transform:uppercase;border:1px solid var(--bdr)}
+.db-tbl td{padding:5px 11px;border:1px solid var(--bdr-l);vertical-align:middle}
+.db-tbl tr:nth-child(even) td{background:#fafbfd}
+.db-add{display:flex;gap:7px;align-items:flex-end;flex-wrap:wrap;padding-top:11px;border-top:1px solid var(--bdr-l);margin-top:8px}
+.db-add input,.db-add select{height:30px;border:1px solid var(--bdr);border-radius:5px;padding:0 9px;font-family:'Inter',sans-serif;font-size:12px;outline:none;background:var(--white)}
+.db-add input:focus,.db-add select:focus{border-color:var(--grn)}
+.db-add .w{flex:1;min-width:160px}
+.bdel{background:none;border:none;color:var(--txt4);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:3px}
+.bdel:hover{background:var(--red-bg);color:var(--red)}
+
+/* EXCEL VIEW CONTAINER */
+.vtb{background:var(--white);border-bottom:1px solid var(--bdr);padding:9px 16px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;flex-shrink:0}
+.vn{font-weight:700;font-size:13px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.excel-tab-bar {background:#f3f2f1;border-top:1px solid #d2d0ce;height:32px;display:flex;align-items:center;padding:0;flex-shrink:0}
+.excel-tab-nav {display:flex;align-items:center;padding:0 10px;color:#616161;font-size:11px;gap:12px;border-right:1px solid #d2d0ce;height:100%;user-select:none}
+.excel-tab-nav span {cursor:pointer}.excel-tab-nav span:hover {color:#107c41}
+.sh-tabs{display:flex;gap:0;align-items:flex-end;height:100%;overflow-x:auto}
+.sh-tabs::-webkit-scrollbar {display:none}
+.sh-tab{padding:0 24px;height:100%;border:none;border-right:1px solid #d2d0ce;background:#f3f2f1;cursor:pointer;font-size:11px;color:#323130;display:flex;align-items:center;justify-content:center;position:relative;user-select:none}
+.sh-tab:hover{background:#eaeaea}.sh-tab.on{background:#ffffff;color:#107c41;font-weight:600}
+.sh-tab.on::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:#107c41}
+.leg-w{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.leg{display:flex;align-items:center;gap:3px;font-size:10px;color:var(--txt3)}
+.ld{width:9px;height:9px;border-radius:2px}
+#tsc{flex:1;overflow:auto;background:#ffffff}
+
+/* CELLS STYLE */
+table.xl{border-collapse:collapse;table-layout:fixed;font-family:'Calibri',sans-serif;font-size:11px;min-width:max-content}
+table.xl th.xch{background:#f3f2f1;height:24px;border:1px solid #d2d0ce;text-align:center;font-weight:400;color:#323130;position:sticky;top:0;z-index:10}
+table.xl th.corner{background:#f3f2f1;border:1px solid #d2d0ce;width:42px;position:sticky;left:0;top:0;z-index:12}
+table.xl td.xrn{background:#f3f2f1;color:#323130;text-align:center;position:sticky;left:0;z-index:5;width:42px;border:1px solid #d2d0ce;height:22px}
+table.xl td.xc{border:1px solid #e1dfdd;padding:2px 6px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;vertical-align:middle;height:22px}
+table.xl td.rmk-hdr{background:#0f4f30!important;color:#fff!important;font-weight:700!important}
+table.xl td.rmk-cov{background:#f0fdf4!important;color:#166534!important}
+table.xl td.rmk-not{background:#fff1f2!important;color:#9f1239!important}
+table.xl td.rmk-pol{background:#eff6ff!important;color:#1e40af!important}
+table.xl td.rmk-par{background:#fefce8!important;color:#854d0e!important}
+table.xl td.rmk-mis{background:#fffbeb!important;color:#92400e!important}
+table.xl td.tnc-hdr{background:#1e3a5f!important;color:#fff!important;font-weight:700!important}
+table.xl td.tnc-v{background:#eff6ff!important;color:#1e3a5f!important}
+table.xl td.ded-hdr{background:#78350f!important;color:#fff!important;font-weight:700!important}
+table.xl td.ded-v{background:#fffbeb!important;color:#78350f!important}
+
+/* SUMMARY STYLES */
+.sum-container{display:flex;flex-direction:column;gap:16px;width:100%}
+.sum-header{background:linear-gradient(135deg, var(--grn) 0%, var(--grn-dk) 100%);color:#fff;padding:16px 20px;border-radius:var(--r)}
+.sum-title{font-size:18px;font-weight:700;margin-bottom:4px}
+.sum-subtitle{font-size:11px;color:rgba(255,255,255,0.8)}
+.sum-grid{display:grid;grid-template-columns:repeat(auto-fit, minmax(240px, 1fr));gap:12px}
+.sum-card{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);padding:14px;display:flex;flex-direction:column;gap:8px}
+.sum-card-h{font-size:11px;font-weight:700;color:var(--txt3);text-transform:uppercase}
+.sum-card-v{font-size:20px;font-weight:700;color:var(--grn-dk)}
+.sum-tbl-card{background:var(--white);border:1px solid var(--bdr);border-radius:var(--r);overflow:hidden}
+.sum-tbl-title{padding:12px 16px;background:var(--surf);border-bottom:1px solid var(--bdr);font-weight:600;font-size:13px}
+.sum-tbl-wrap{width:100%;overflow-x:auto}
+.sum-tbl{width:100%;border-collapse:collapse;font-size:12px;text-align:left}
+.sum-tbl th{background:#f1f5f9;padding:10px 12px;font-weight:600;color:var(--txt2);border-bottom:2px solid var(--bdr)}
+.sum-tbl td{padding:10px 12px;border-bottom:1px solid var(--bdr-l);color:var(--txt);vertical-align:top}
+.badge-aog{background:#fef3c7;color:#92400e;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;display:inline-block}
+.badge-normal{background:#e2e8f0;color:#334155;padding:2px 6px;border-radius:4px;font-size:10px;display:inline-block}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:rgba(15,25,40,.82);color:#fff;padding:6px 16px;border-radius:7px;font-size:12px;z-index:1000;pointer-events:none;opacity:0;transition:opacity .18s;white-space:nowrap}
+::-webkit-scrollbar{width:7px;height:7px}::-webkit-scrollbar-track{background:#f0f0f0}::-webkit-scrollbar-thumb{background:#c8cdd8;border-radius:3px}
+</style>
+</head>
+<body>
+
+<div id="tb">
+  <div class="logo-w">
+    <div class="logo-i">📊</div>
+    <span class="logo-n">InsureQuote</span>
+    <span class="logo-s">Studio Pro</span>
+  </div>
+  <div class="tr">
+    <div class="role-wrapper">
+      <span class="role-lbl">👤 Active View:</span>
+      <select class="role-select" id="active-role-switcher" onchange="toggleUserWorkspaceRole(this.value)">
+        <option value="sales">SALES TEAM</option>
+        <option value="underwriter" selected>UNDERWRITING (UW)</option>
+      </select>
+    </div>
+    <span class="tbadge" onclick="toggleDB()" id="db-badge">🗄 DB: 0 entries</span>
+  </div>
+</div>
+
+<div id="app">
+  <div id="sb">
+    <div class="stp on" id="st1" onclick="gStep(1)"><span class="sn">1</span> RFQ Master Tracker</div>
+    <span class="sa">›</span>
+    <div class="stp" id="st2" onclick="gStep(2)"><span class="sn">2</span> Inject per Sheet</div>
+    <span class="sa">›</span>
+    <div class="stp" id="st3" onclick="gStep(3)"><span class="sn">3</span> View Grid Matrix</div>
+    <span class="sa">›</span>
+    <div class="stp" id="st4" onclick="gStep(4)"><span class="sn">4</span> Proposal Summary</div>
+  </div>
+
+  <div id="panels">
+    <div class="panel on" id="p1">
+      <div style="font-size:13px; font-weight:700; color:var(--txt2); margin-top:4px;">📋 Centralized RFQ Process Logging Queue</div>
+      <div class="tracker-card">
+        <div class="tracker-tbl-wrap">
+          <table class="tracker-tbl">
+            <thead>
+              <tr>
+                <th>File Reference</th>
+                <th>Insured Client</th>
+                <th>Aggregated TSI</th>
+                <th>Current Status</th>
+                <th>Assigned Action</th>
+              </tr>
+            </thead>
+            <tbody id="tracker-tbody-pipeline">
+              <tr>
+                <td colspan="5" style="text-align:center; padding:24px; color:var(--txt4);">No documents indexed inside workspace loop. Drag a file below.</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="upz" onclick="document.getElementById('fi').click()"
+        ondragover="event.preventDefault();this.classList.add('drag')"
+        ondragleave="this.classList.remove('drag')"
+        ondrop="hDrop(event)">
+        <span class="ui">📂</span>
+        <div class="ut">Upload & Index New RFQ Spreadsheet</div>
+        <div class="us">Drag &amp; drop or click · .xlsx / .xls files directly</div>
+        <input type="file" id="fi" accept=".xlsx,.xls" multiple style="display:none" onchange="loadMultipleFiles(this.files)"/>
+      </div>
+
+      <div class="card" id="db-card" style="display:none">
+        <div class="ch" style="cursor:pointer" onclick="toggleDB()">
+          <div class="ct">🗄 Remarks Database <span id="db-cnt" style="font-size:11px;font-weight:400;color:var(--txt3)"></span></div>
+          <span id="db-arr" style="color:var(--txt4)">▲</span>
+        </div>
+        <div id="db-body">
+          <div class="cb" style="padding-bottom:6px">
+            <div style="font-size:11px;color:var(--txt3);margin-bottom:8px;padding:6px 8px;background:var(--grn-bg);border-radius:5px;border:1px solid #a7d9bc">
+              <b style="color:var(--grn-dk)">ℹ Per-product databases loaded:</b> BSUS, BLUS, SFSP, IAR. Entries below are overrides.
+            </div>
+            <table class="db-tbl"><thead><tr><th>#</th><th>Add On Cover</th><th>MGIL Remark</th><th></th></tr></thead>
+            <tbody id="db-tbody"></tbody></table>
+            <div class="db-add">
+              <input class="w" id="nc" placeholder="Add On Cover name…"/>
+              <select id="nrt" onchange="onNRT()">
+                <option value="Covered">Covered</option>
+                <option value="Not Covered">Not Covered</option>
+                <option value="policy">Coverage as per MGIL Policy wording</option>
+                <option value="custom">Custom…</option>
+              </select>
+              <input id="ncust" placeholder="Custom remark" style="display:none;flex:1;min-width:160px"/>
+              <button class="btn bg" onclick="addE()">+ Add</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" id="p2">
+      <div class="f-ctrl">
+        <span class="f-lbl">Active Processing Target:</span>
+        <select class="f-select" id="global-file-selector" onchange="switchActiveWorkbookContext(this.value)"></select>
+      </div>
+
+      <div id="sheet-sel-wrap">
+        <div style="font-size:11px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Select Sheet to Configure</div>
+        <div class="sheet-sel" id="sheet-sel"></div>
+      </div>
+      <div id="sheet-panels"></div>
+      
+      <div style="background:#f8fafc; border:1px solid var(--bdr); padding:14px; border-radius:8px; margin-top:16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+        <div>
+          <div style="font-weight:700; font-size:12px;">⚡ Underwriter Underwriting Settlement Desk</div>
+          <div style="font-size:11px; color:var(--txt3)">Finalize assessment loop values for tracking ledger visibility metrics.</div>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn br" onclick="setProcessedFileResolutionState('Declined')" style="padding:7px 16px;">🔴 Decline Risk Profile</button>
+          <button class="btn bg" onclick="setProcessedFileResolutionState('Quoted')" style="padding:7px 20px; font-size:12px;">🟢 Complete & Mark Quoted</button>
+        </div>
+      </div>
+
+      <div class="navrow">
+        <button class="btn bs" onclick="gStep(1)">← Back to pipeline</button>
+        <button class="btn bg bl" onclick="gStep(3)">View Grid Matrix →</button>
+      </div>
+    </div>
+
+    <div id="p3">
+      <div class="vtb">
+        <div class="vn" style="flex:1; min-width:300px; gap:12px;">
+          <span>📄 Active Book Matrix:</span>
+          <select class="f-select" id="view-file-selector" onchange="switchActiveWorkbookContext(this.value)" style="max-width:320px;"></select>
+          <span id="vfn" style="font-weight:400; color:var(--txt3)">—</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <div class="leg-w">
+            <div class="leg"><div class="ld" style="background:#d1fae5;border:1px solid #6ee7b7"></div>Covered</div>
+            <div class="leg"><div class="ld" style="background:#fff1f2;border:1px solid #fda4af"></div>Not Covered</div>
+            <div class="leg"><div class="ld" style="background:#eff6ff;border:1px solid #93c5fd"></div>Wording</div>
+            <div class="leg"><div class="ld" style="background:#eff6ff;border:1px solid #bfdbfe"></div>T&amp;C</div>
+            <div class="leg"><div class="ld" style="background:#fffbeb;border:1px solid #fcd34d"></div>Deductible</div>
+          </div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <button class="btn bs" id="grid-edit-back-btn" onclick="gStep(2)" style="font-size:11px">← Edit Configuration</button>
+            <button class="btn bg" onclick="gStep(4)" style="font-size:11px">Summary View →</button>
+            <button id="excel-download-action-btn" onclick="doDownload()" style="padding:5px 14px;background:#1a7f4e;color:#fff;border:none;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:600;font-size:11px;display:flex;align-items:center;gap:5px" title="Download active processed Excel">⬇ Download Excel</button>
+          </div>
+        </div>
+      </div>
+      
+      <div id="tsc">
+        <div style="padding:48px;text-align:center;color:var(--txt4)">Upload file(s) to compute grids here.</div>
+      </div>
+      
+      <div class="excel-tab-bar">
+        <div class="excel-tab-nav">
+          <span title="First Sheet" onclick="navigateTabs('first')">⏮</span>
+          <span title="Previous Sheet" onclick="navigateTabs('prev')">◀</span>
+          <span title="Next Sheet" onclick="navigateTabs('next')">▶</span>
+          <span title="Last Sheet" onclick="navigateTabs('last')">⏭</span>
+        </div>
+        <div class="sh-tabs" id="shtabs"></div>
+      </div>
+
+      <div id="dl-bar" style="display:none;background:var(--grn);padding:8px 16px;align-items:center;justify-content:space-between;flex-shrink:0">
+        <span style="color:rgba(255,255,255,.85);font-size:11px" id="dl-info">Ready to export processed registry streams.</span>
+        <button id="bulk-download-action-btn" onclick="doDownloadAllFiles()" style="padding:6px 18px;background:#fff;color:var(--grn);border:none;border-radius:4px;cursor:pointer;font-family:'Inter',sans-serif;font-weight:700;font-size:12px;display:flex;align-items:center;gap:5px">⬇ Download All Processed Files</button>
+      </div>
+    </div>
+
+    <div class="panel" id="p4">
+      <div class="sum-container">
+        <div class="sum-header">
+          <div class="sum-title">📋 Executive Multi-RFQ &amp; Risk Exposure Summary Framework</div>
+          <div class="sum-subtitle" id="sum-filename">Consolidated Cross-Portfolio Multi-File Pipeline Evaluation</div>
+        </div>
+
+        <div class="sum-grid">
+          <div class="sum-card">
+            <div class="sum-card-h">🏢 Total Insured Entities (Across Books)</div>
+            <div class="sum-card-v" id="sum-stat-insured">0</div>
+          </div>
+          <div class="sum-card">
+            <div class="sum-card-h">📍 Total Scanned Locations</div>
+            <div class="sum-card-v" id="sum-stat-locs">0</div>
+          </div>
+          <div class="sum-card">
+            <div class="sum-card-h">💰 Combined Aggregated TSI Portfolio</div>
+            <div class="sum-card-v" id="sum-stat-tsi">₹0</div>
+          </div>
+        </div>
+
+        <div class="sum-tbl-card">
+          <div class="sum-tbl-title">🔍 Master Consolidated Risk Schedule View (All Files, All Sheets)</div>
+          <div class="sum-tbl-wrap">
+            <table class="sum-tbl">
+              <thead>
+                <tr>
+                  <th>Source File</th>
+                  <th>Sheet Ref</th>
+                  <th>Insured Name</th>
+                  <th>Location Profile</th>
+                  <th>Risk Occupancy Classification</th>
+                  <th>Total Sum Insured (TSI)</th>
+                  <th>Historical Claims Status</th>
+                  <th>AOG / NAT-CAT Exposure</th>
+                </tr>
+              </thead>
+              <tbody id="sum-tbody">
+                <tr>
+                  <td colspan="8" style="text-align:center;padding:30px;color:var(--txt4)">Upload data files to trigger multi-book pipeline view.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div>
+           <button class="btn bs" onclick="gStep(1)">← Back to Tracker Dashboard</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+// MOCK LOCAL REGISTRY STATE ENGINE
+let CURRENT_USER_ROLE = "underwriter"; 
+let RUNTIME_STATUS_LEDGER = {};       
+
+const PRODUCT_DB = {
+  BSUS: [
+    {cover:'EQ',remark:'Covered'},
+    {cover:'Earthquake Cover',remark:'Covered'},
+    {cover:'STORM, TYPHOON, FLOOD',remark:'Covered'},
+    {cover:'STFI Cover',remark:'Covered'},
+    {cover:'Terrorism',remark:'Covered'},
+    {cover:'Terrorism Cover',remark:'Covered'},
+    {cover:'Local Authority Clause',remark:'Not Covered'},
+    {cover:'72 Hours Clause',remark:'Not Covered'},
+    {cover:'Transmission line covered for non owned',remark:'Not Covered'},
+    {cover:'Wheeling Clause',remark:'Not Covered'},
+    {cover:'Architecture Fees - Upto 5% of TSI',remark:'Coverage as per MGIL BSUS Policy wording'},
+    {cover:'Removal Of Debris Fees -Upto 2% of TSI',remark:'Coverage as per MGIL BSUS Policy wording'},
+    {cover:'Reinstatement Claues',remark:'Covered excluding stock'},
+    {cover:'Reinstatement Value Clause',remark:'Covered'},
+    {cover:'Startup Cost',remark:'Coverage as per MGIL BSUS Policy wording'},
+    {cover:'Escalation Clause',remark:'Not Covered'},
+    {cover:'Omission to Insured Clause',remark:'Not Covered'},
+    {cover:'Impact Damage Cover',remark:'Coverage as per MGIL BSUS Policy wording'},
+    {cover:'Spontaneous Combustion Cover',remark:'Coverage as per MGIL BSUS Policy wording'},
+    {cover:'Money Cover',remark:'Coverage as per MGIL BSUS Policy wording'},
+    {cover:'Spoilage Material Damage Clause',remark:'Coverage as per MGIL BSUS Policy wording'},
+  ],
+  BLUS: [
+    {cover:'EQ',remark:'Covered'},
+    {cover:'Earthquake Cover',remark:'Covered'},
+    {cover:'STORM, TYPHOON, FLOOD',remark:'Covered'},
+    {cover:'STFI Cover',remark:'Covered'},
+    {cover:'Terrorism',remark:'Covered'},
+    {cover:'Terrorism Cover',remark:'Covered'},
+    {cover:'Local Authority Clause',remark:'Not Covered'},
+    {cover:'72 Hours Clause',remark:'Not Covered'},
+    {cover:'Transmission line covered for non owned',remark:'Not Covered'},
+    {cover:'Wheeling Clause',remark:'Not Covered'},
+    {cover:'Architecture Fees - Upto 5% of TSI',remark:'Coverage as per MGIL BLUS Policy wording'},
+    {cover:'Removal Of Debris Fees -Upto 2% of TSI',remark:'Coverage as per MGIL BLUS Policy wording'},
+    {cover:'Reinstatement Claues',remark:'Covered excluding stock'},
+    {cover:'Reinstatement Value Clause',remark:'Covered'},
+    {cover:'Startup Cost',remark:'Coverage as per MGIL BLUS Policy wording'},
+    {cover:'Escalation Clause',remark:'Not Covered'},
+    {cover:'Omission to Insured Clause',remark:'Not Covered'},
+    {cover:'Impact Damage Cover',remark:'Coverage as per MGIL BLUS Policy wording'},
+    {cover:'Spontaneous Combustion Cover',remark:'Coverage as per MGIL BLUS Policy wording'},
+    {cover:'Money Cover',remark:'Coverage as per MGIL BLUS Policy wording'},
+    {cover:'Spoilage Material Damage Clause',remark:'Coverage as per MGIL BLUS Policy wording'},
+  ],
+  SFSP: [
+    {cover:'EQ',remark:'Covered'},
+    {cover:'Earthquake Cover',remark:'Covered'},
+    {cover:'STORM, TYPHOON, FLOOD',remark:'Covered'},
+    {cover:'STFI Cover',remark:'Covered'},
+    {cover:'Terrorism',remark:'Covered'},
+    {cover:'Terrorism Cover',remark:'Covered'},
+    {cover:'Local Authority Clause',remark:'Covered excluding stock'},
+    {cover:'72 Hours Clause',remark:'Covered fo AOG Perils only'},
+    {cover:'Transmission line covered for non owned',remark:'Covered if it is owned by insured'},
+    {cover:'Wheeling Clause',remark:'Coverage as per claims team confirmation'},
+    {cover:'Architecture Fees - Upto 5% of TSI',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+    {cover:'Removal Of Debris Fees -Upto 2% of TSI',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+    {cover:'Reinstatement Claues',remark:'Covered excluding stock'},
+    {cover:'Reinstatement Value Clause',remark:'Covered excluding stock'},
+    {cover:'Startup Cost',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+    {cover:'Escalation Clause',remark:'Covered upto 5% of BMA Sum Insured'},
+    {cover:'Omission to Insured Clause',remark:'Covered upto 5% of BMA Sum Insured'},
+    {cover:'Impact Damage Cover',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+    {cover:'Spontaneous Combustion Cover',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+    {cover:'Money Cover',remark:'Not Covered'},
+    {cover:'Spoilage Material Damage Clause',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+  ],
+  IAR: [
+    {cover:'EQ',remark:'Covered'},
+    {cover:'Earthquake Cover',remark:'Covered'},
+    {cover:'STORM, TYPHOON, FLOOD',remark:'Covered'},
+    {cover:'STFI Cover',remark:'Covered'},
+    {cover:'Terrorism',remark:'Covered'},
+    {cover:'Terrorism Cover',remark:'Covered'},
+    {cover:'Local Authority Clause',remark:'Covered excluding stock'},
+    {cover:'72 Hours Clause',remark:'Covered fo AOG Perils only'},
+    {cover:'Transmission line covered for non owned',remark:'Covered if it is owned by insured'},
+    {cover:'Wheeling Clause',remark:'Coverage as per claims team confirmation'},
+    {cover:'Architecture Fees - Upto 5% of TSI',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+    {cover:'Removal Of Debris Fees -Upto 2% of TSI',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+    {cover:'Reinstatement Claues',remark:'Covered excluding stock'},
+    {cover:'Reinstatement Value Clause',remark:'Covered excluding stock'},
+    {cover:'Startup Cost',remark:'covered upto 5% of TSI or INR 5 Crore whichever is lesser in Aggregate'},
+    {cover:'Escalation Clause',remark:'Covered upto 5% of BMA Sum Insured'},
+    {cover:'Omission to Insured Clause',remark:'Covered upto 5% of BMA Sum Insured'},
+    {cover:'Impact Damage Cover',remark:'Inbuilt cover as per erstwhile IAR Tariff'},
+    {cover:'Spontaneous Combustion Cover',remark:'Inbuilt cover as per erstwhile IAR Tariff'},
+    {cover:'Money Cover',remark:'Not Covered'},
+    {cover:'Spoilage Material Damage Clause',remark:'Inbuilt cover as per erstwhile IAR Tariff'},
+  ],
+};
+
+const DEF_DB = Object.values(PRODUCT_DB).flat().filter((e,i,a)=>a.findIndex(x=>x.cover.trim().toLowerCase()===e.cover.trim().toLowerCase())===i);
+
+const TNC={
+  BSUS:`TERMS & CONDITIONS — BHARAT SOOKSHMA UDYAM SURAKSHA (BSUS)
+1. Cover as per IRDAI approved BSUS Policy wordings.
+2. Reinstatement Value basis for Building & Plant & Machinery.
+3. Market Value basis for Stock.
+4. Standard Fire & Special Perils as per BSUS coverage.
+5. Subject to policy excess as applicable.
+6. Earthquake (Fire & Shock) cover included in BSUS standard.
+7. War, SRCC & Terrorism excluded unless specifically endorsed.
+8. Subject to satisfactory survey and inspection.
+9. Claims to be intimated within 7 days of occurrence.`,
+
+  BLUS:`TERMS & CONDITIONS — BHARAT LAGHU UDYAM SURAKSHA (BLUS)
+1. Cover as per IRDAI approved BLUS Policy wordings.
+2. Reinstatement Value basis for Buildings & Machinery.
+3. Floater cover for stock at multiple locations if declared.
+4. Subject to policy excess as applicable.
+5. STFI cover included subject to sub-limit.
+6. Earthquake (Fire & Shock) — Zone-wise loading applicable.
+7. War, SRCC & Terrorism excluded unless endorsed.
+8. Co-insurance: Lead insurer basis as per endorsement.
+9. Subject to satisfactory pre-risk survey.
+10. Claims to be intimated within 7 days of occurrence.`,
+
+  SFSP:`TERMS & CONDITIONS — STANDARD FIRE & SPECIAL PERILS (SFSP)
+1. Cover as per Standard Fire & Special Perils Policy wordings.
+2. Reinstatement Value basis for Buildings & Machinery.
+3. Market Value basis for Stock.
+4. Under-insurance: Average clause applicable.
+5. STFI Cover: Subject to additional premium and sub-limit.
+6. Earthquake (Fire & Shock): Zone-based loading applicable.
+7. Terrorism: Subject to Terrorism Pool / RSMDST endorsement.
+8. War and allied perils: Excluded.
+9. Subject to satisfactory pre-inception survey.
+10. Claims to be intimated within 15 days of occurrence.
+11. Reinstatement of damaged property within 12 months.`,
+
+  IAR:`TERMS & CONDITIONS — INDUSTRIAL ALL RISK (IAR)
+1. Cover as per erstwhile IAR Tariff wordings and IRDAI approved policy.
+2. Reinstatement Value basis for Buildings, Plant & Machinery.
+3. Market Value / Agreed Value basis for Stock.
+4. All Risks of physical loss or damage — sudden & unforeseen.
+5. Earthquake (Fire & Shock) & STFI: Included as per IAR wordings.
+6. Impact Damage & Spontaneous Combustion: Inbuilt as per IAR Tariff.
+7. Under-insurance: Average clause applicable.
+8. Terrorism: Subject to Terrorism Pool / RSMDST endorsement.
+9. War and allied perils: Excluded.
+10. Consequential loss: Excluded unless specifically endorsed.
+11. Subject to satisfactory pre-inception survey.
+12. Claims to be intimated within 15 days of occurrence.`,
+
+  Burglary:`TERMS & CONDITIONS — BURGLARY INSURANCE\n1. Cover as per Standard Burglary & Housebreaking Policy wordings.\n2. First Loss Basis: Sum insured as per policy schedule.\n3. Cover operative only when premises are properly secured.\n4. Jewellery/Valuables: Subject to inner limits per article.\n5. Cash/Currency: Separate sub-limit; strong room required.\n6. Theft without forcible entry: Not covered (standard exclusion).\n7. Mysterious disappearance/Shortage at stocktaking: Excluded.\n8. Maintenance of security arrangements as declared.\n9. CPSI approved alarm system to be kept operational.\n10. FIR copy mandatory with all claim documents.`,
+  MBD:`TERMS & CONDITIONS — MACHINERY BREAKDOWN (MBD)\n1. Cover as per MBD Policy wordings — sudden & unforeseen damage.\n2. Insured Value: Replacement Value less depreciation.\n3. Maintenance as per OEM specifications mandatory.\n4. Only trained/certified personnel to operate machinery.\n5. Statutory inspection of Boilers/Pressure Vessels mandatory.\n6. Electrical machinery: Short-circuit & excessive current covered.\n7. Consequential loss excluded unless MLOP endorsed separately.\n8. Prior insurer approval required for third-party repairs.\n9. Gradual deterioration/wear & tear: Not covered.\n10. Inspection report required for machinery IDV over Rs.1 Crore.`,
+  EEI:`TERMS & CONDITIONS — ELECTRONIC EQUIPMENT INSURANCE (EEI)\n1. Cover: All risks of physical loss/damage to electronic equipment.\n2. Insured Value: Replacement value as per schedule.\n3. Software/Data: Reconstruction cost covered; original program excluded.\n4. Regular data backups: Insured's responsibility.\n5. Valid AMC to be maintained for major systems.\n6. Accidental damage including power fluctuation: Covered.\n7. Wear, tear & gradual deterioration: Not covered.\n8. Wilful act/gross negligence: Not covered.\n9. Inventory schedule to be updated on acquisition.`,
+  FLOP:`TERMS & CONDITIONS — FIRE LOSS OF PROFITS (FLOP)\n1. Cover contingent on Material Damage (Fire) policy being in force.\n2. Gross Profit = Turnover less Purchases and variable charges.\n3. Indemnity Period: As elected (12/18/24 months).\n4. Waiting Period/Franchise: 3 working days.\n5. Standing Charges: Wages, rent, rates, taxes, depreciation as declared.\n6. Accountant's certificate to be provided with claim.\n7. Increased Cost of Working: Limited to saving in Gross Profit.\n8. Under-insurance: Average clause on Gross Profit applies.\n9. Savings in standing charges during interruption to be deducted.\n10. Turnover as per audited accounts for reference reference period.`
+};
+
+const DED_DB=[
+  {product:'BSUS',minSI:0,maxSI:50000000,section:'Material Damage',text:'INR 5,00,000 for each and every loss'},
+  {product:'BLUS',minSI:0,maxSI:500000000,section:'Material Damage / AOG',text:'5% of claim amount subject to minimum of INR 10,00,000 for each and every loss'},
+  {product:'SFSP',minSI:0,maxSI:100000000,section:'Property Damage (PD)',text:'5% of claim amount subject to a minimum of INR 10,00,000 for each and every loss'},
+  {product:'SFSP',minSI:100000001,maxSI:1000000000,section:'Property Damage (PD)',text:'5% of claim amount subject to a minimum of INR 25,00,000 for each and every loss'},
+  {product:'SFSP',minSI:1000000001,maxSI:500000000000,section:'Property Damage (PD)',text:'5% of claim amount subject to a minimum of INR 50,00,000 for each and every loss'},
+  {product:'IAR',minSI:0,maxSI:100000000,section:'Property Damage (PD)',text:'5% of claim amount subject to a minimum of INR 5,00,000 for each and every loss'},
+  {product:'IAR',minSI:100000001,maxSI:1000000000,section:'Property Damage (PD)',text:'5% of claim amount subject to a minimum of INR 10,00,000 for each and every loss'},
+];
+
+let WORKBOOKS = {}; 
+let FILE = "";       
+let WB = null;       
+let INJ = {};        
+let ADDON = {};      
+let DED_DETECT = {}; 
+let INJECTED_CELLS = {}; 
+let ACTSH = "";      
+
+function normStr(str) {
+  if (!str) return '';
+  return String(str).toLowerCase().replace(/[^a-z0-9]/g, '').trim();
+}
+
+function loadDB(){try{const s=localStorage.getItem('iq_db5');if(s){const a=JSON.parse(s);if(a&&a.length)return a;}}catch(e){}return JSON.parse(JSON.stringify(DEF_DB));}
+let DB=loadDB();
+function saveDB(){try{localStorage.setItem('iq_db5',JSON.stringify(DB));}catch(e){}updBadge();renderDBT();}
+
+function mkLookup(product){
+  const m={};
+  const prodKey = product ? Object.keys(PRODUCT_DB).find(k=>k.toLowerCase()===product.toLowerCase()) : null;
+  const entries = prodKey ? PRODUCT_DB[prodKey] : DB;
+  
+  entries.forEach(e=>{ m[normStr(e.cover)]=e.remark; });
+  DB.forEach(e=>{
+    const k=normStr(e.cover);
+    if(!m[k]) m[k]=e.remark;
+  });
+  return m;
+}
+
+function updBadge(){
+  const n=DB.length;
+  document.getElementById('db-badge').textContent='🗄 DB: '+n+' entries';
+  document.getElementById('db-cnt').textContent='('+n+')';
+}
+
+function onNRT(){
+  const v=document.getElementById('nrt').value;
+  document.getElementById('ncust').style.display=(v==='custom')?'inline-block':'none';
+}
+
+function hDrop(e){
+  e.preventDefault();
+  document.getElementById('upz').classList.remove('drag');
+  if(e.dataTransfer.files.length > 0) {
+    loadMultipleFiles(e.dataTransfer.files);
+  }
+}
+
+// PIPELINE WORKFLOW STATE RESOLUTIONS
+function toggleUserWorkspaceRole(selectedRole) {
+  CURRENT_USER_ROLE = selectedRole;
+  
+  const step2Tab = document.getElementById('st2');
+  const dbConfigBadge = document.getElementById('db-badge');
+  const backToEditBtn = document.getElementById('grid-edit-back-btn');
+  const downloadSingleBtn = document.getElementById('excel-download-action-btn');
+  const downloadBulkBar = document.getElementById('dl-bar');
+
+  if(CURRENT_USER_ROLE === "sales") {
+     step2Tab.style.display = "none";
+     dbConfigBadge.style.display = "none";
+     backToEditBtn.style.display = "none";
+     
+     // Prevent sales team from downloading or modifying unapproved draft buffers
+     downloadSingleBtn.style.display = "none";
+     downloadBulkBar.style.setProperty("display", "none", "important");
+     
+     if(document.getElementById('p2').classList.contains('on')) {
+        gStep(1);
+     }
+     toast("Switched to SALES VIEW (Read-Only Status Tracker Mode Active)");
+  } else {
+     step2Tab.style.display = "flex";
+     dbConfigBadge.style.display = "inline-block";
+     backToEditBtn.style.display = "inline-block";
+     downloadSingleBtn.style.display = "inline-flex";
+     
+     if(document.getElementById('p3').classList.contains('on')) {
+        downloadBulkBar.style.display = "flex";
+     }
+     toast("Switched to UNDERWRITING (UW) VIEW (Full Injection Controls Active)");
+  }
+  renderPipelineTrackerDashboard();
+}
+
+function setProcessedFileResolutionState(targetStatus) {
+  if(!FILE || !RUNTIME_STATUS_LEDGER[FILE]) {
+     toast("⚠ Active processing frame invalid or file stream detached");
+     return;
+  }
+  RUNTIME_STATUS_LEDGER[FILE] = targetStatus;
+  toast(`✓ Document payload registered as: ${targetStatus.toUpperCase()}`);
+  renderPipelineTrackerDashboard();
+  gStep(1);
+}
+
+function renderPipelineTrackerDashboard() {
+  const tbody = document.getElementById('tracker-tbody-pipeline');
+  tbody.innerHTML = '';
+  
+  const fileKeys = Object.keys(WORKBOOKS);
+  if(fileKeys.length === 0) {
+     tbody.innerHTML = `<tr><td colspan=\"5\" style=\"text-align:center; padding:24px; color:var(--txt4);\">No documents indexed inside workspace loop. Drag a file below.</td></tr>`;
+     return;
+  }
+
+  fileKeys.forEach(key => {
+     const status = RUNTIME_STATUS_LEDGER[key] || "Pending with UW";
+     let statusClass = "status-pending";
+     if(status === "Quoted") statusClass = "status-quoted";
+     if(status === "Declined") statusClass = "status-declined";
+
+     // Parse Client Details safely from computed buffer summary maps
+     let clientName = "Extracting Data...";
+     let totalTsiString = "Computing...";
+     const ws = WORKBOOKS[key].wb.Sheets[WORKBOOKS[key].activeSheet];
+     if(ws) {
+        Object.keys(ws).forEach(ref => {
+           if(ref[0] === '!') return;
+           const txt = String(ws[ref].v || '').toLowerCase();
+           if(txt.includes('insured name') || txt.includes('client name')) {
+              clientName = lookBesideOrBelow(ws, ref) || clientName;
+           }
+        });
+        let maxSI = 0;
+        Object.keys(ws).forEach(ref => {
+           if(ref[0] === '!') return;
+           const rawVal = ws[ref].v;
+           const n = typeof rawVal === 'number' ? rawVal : parseFloat(String(rawVal || '').replace(/,/g, ''));
+           if(!isNaN(n) && n >= 10000 && n > maxSI) maxSI = n;
+        });
+        totalTsiString = maxSI ? `₹${maxSI.toLocaleString('en-IN')}` : "₹0.00";
+     }
+     if(clientName === "Extracting Data...") clientName = "Standard Commercial Entity";
+
+     let actionElementHTML = '';
+     if(CURRENT_USER_ROLE === "underwriter") {
+        actionElementHTML = `<button class="btn bg" onclick="switchActiveWorkbookContext('${esc(key)}'); gStep(2);" style="padding:4px 10px; font-size:11px;">⚙ Process File</button>`;
+     } else {
+        if(status === "Quoted") {
+           actionElementHTML = `<button class="btn bs" onclick="switchActiveWorkbookContext('${esc(key)}'); gStep(3);" style="padding:4px 10px; font-size:11px; color:var(--grn); font-weight:700;">📄 View Quoted Matrix</button>`;
+        } else {
+           actionElementHTML = `<span style="color:var(--txt4); font-style:italic;">Read-Only Mode</span>`;
+        }
+     }
+
+     const tr = document.createElement('tr');
+     tr.innerHTML = `
+       <td style="font-family:'JetBrains Mono', monospace; font-weight:600;">${esc(key)}</td>
+       <td style="font-weight:600; color:var(--txt2);">${esc(clientName)}</td>
+       <td style="font-weight:700; color:var(--blue-dk);">${totalTsiString}</td>
+       <td><span class="status-pill ${statusClass}">${status}</span></td>
+       <td>${actionElementHTML}</td>
+     `;
+     tbody.appendChild(tr);
+  });
+}
+
+function loadMultipleFiles(fileList) {
+  if (!fileList || fileList.length === 0) return;
+  let filesLoadedCount = 0;
+  
+  for(let i = 0; i < fileList.length; i++) {
+    const currentFile = fileList[i];
+    const reader = new FileReader();
+    
+    reader.onload = (function(f) {
+      return function(ev) {
+        try {
+          const workbookData = XLSX.read(new Uint8Array(ev.target.result), {type:'array', cellStyles:true, cellDates:true, sheetStubs:true});
+          
+          const fileRecord = {
+            name: f.name,
+            wb: workbookData,
+            inj: {},
+            addon: {},
+            dedDetect: {},
+            injectedCells: {},
+            activeSheet: workbookData.SheetNames[0]
+          };
+          
+          workbookData.SheetNames.forEach(n => {
+            fileRecord.inj[n] = {};
+            fileRecord.injectedCells[n] = [];
+          });
+          
+          injectAllRemarksForRecord(fileRecord);
+          detectAllDedsForRecord(fileRecord);
+          
+          WORKBOOKS[f.name] = fileRecord;
+          if(!RUNTIME_STATUS_LEDGER[f.name]) {
+             RUNTIME_STATUS_LEDGER[f.name] = "Pending with UW";
+          }
+          filesLoadedCount++;
+          
+          if (filesLoadedCount === fileList.length) {
+            FILE = f.name; 
+            synchronizeStatePointersWithActiveFile();
+            updateFileSelectorsDropdowns();
+            
+            buildStep2();
+            generateProposalSummary();
+            renderPipelineTrackerDashboard();
+            gStep(1); // Default router redirection directly into tracking list container matrix view
+            toast('✓ Loaded & Index Mapped ' + fileList.length + ' RFQ configuration logs safely.');
+          }
+        } catch(err) {
+          toast('✕ Error reading ' + f.name);
+          console.error(err);
+        }
+      };
+    })(currentFile);
+    
+    reader.readAsArrayBuffer(currentFile);
+  }
+}
+
+function synchronizeStatePointersWithActiveFile() {
+  if(!FILE || !WORKBOOKS[FILE]) return;
+  const currentRecord = WORKBOOKS[FILE];
+  WB = currentRecord.wb;
+  INJ = currentRecord.inj;
+  ADDON = currentRecord.addon;
+  DED_DETECT = currentRecord.dedDetect;
+  INJECTED_CELLS = currentRecord.injectedCells;
+  ACTSH = currentRecord.activeSheet;
+  document.getElementById('vfn').textContent = FILE;
+}
+
+function updateFileSelectorsDropdowns() {
+  const gSel = document.getElementById('global-file-selector');
+  const vSel = document.getElementById('view-file-selector');
+  
+  gSel.innerHTML = '';
+  vSel.innerHTML = '';
+  
+  Object.keys(WORKBOOKS).forEach(fileName => {
+    const optG = document.createElement('option');
+    optG.value = fileName; optG.textContent = fileName;
+    if(fileName === FILE) optG.selected = true;
+    gSel.appendChild(optG);
+    
+    const optV = document.createElement('option');
+    optV.value = fileName; optV.textContent = fileName;
+    if(fileName === FILE) optV.selected = true;
+    vSel.appendChild(optV);
+  });
+}
+
+function switchActiveWorkbookContext(targetFileName) {
+  if(!WORKBOOKS[targetFileName]) return;
+  
+  if(FILE && WORKBOOKS[FILE]) {
+    WORKBOOKS[FILE].activeSheet = ACTSH;
+  }
+  
+  FILE = targetFileName;
+  synchronizeStatePointersWithActiveFile();
+  updateFileSelectorsDropdowns();
+  
+  buildStep2();
+  switchSheetPanel(ACTSH);
+  
+  if(document.getElementById('p3').classList.contains('on')) {
+    renderSheet(ACTSH);
+  }
+}
+
+function injectAllRemarksForRecord(record){
+  const targetWb = record.wb;
+  targetWb.SheetNames.forEach(name=>{
+    const ws=targetWb.Sheets[name];
+    if(!ws)return;
+
+    let detProd='BLUS'; 
+    Object.keys(ws).forEach(ref=>{
+      if(ref[0]==='!')return;
+      const vl=String(ws[ref].v||'').toLowerCase();
+      if(vl.includes('bsus')||vl.includes('sookshma'))detProd='BSUS';
+      else if(vl.includes('blus')||vl.includes('laghu'))detProd='BLUS';
+      else if(vl.includes('sfsp')||vl.includes('standard fire'))detProd='SFSP';
+      else if(vl==='iar'||vl.includes('iar ')||vl.includes('industrial all risk')||/\biar\b/.test(vl))detProd='IAR';
+    });
+    
+    const lookup=mkLookup(detProd);
+    let aRow=-1, aCol=-1;
+
+    Object.keys(ws).forEach(ref=>{
+      if(ref[0]==='!')return;
+      const rawText = String(ws[ref].v||'').trim().toLowerCase();
+      const cleanText = rawText.replace(/[^a-z0-9]/g, '');
+      
+      if(
+        cleanText === 'addoncover' || cleanText === 'addoncovers' || 
+        cleanText === 'inbuiltcover' || cleanText === 'inbuiltcovers' ||
+        cleanText === 'addoncovre' || cleanText === 'addoncovres' ||
+        rawText.includes('add-on cover') || rawText.includes('add on cover')
+      ){
+        const a = XLSX.utils.decode_cell(ref);
+        if(aRow < 0 || a.r < aRow){ aRow = a.r; aCol = a.c; }
+      }
+    });
+
+    if (aRow < 0) {
+      for (let r = 0; r < 50; r++) { 
+        for (let c = 0; c <= 1; c++) { 
+          const checkRef = XLSX.utils.encode_cell({r, c});
+          const checkCell = ws[checkRef];
+          if (checkCell && checkCell.v) {
+            const normalizedCellVal = normStr(String(checkCell.v));
+            if (lookup[normalizedCellVal]) { 
+              aRow = r - 1;
+              aCol = c;
+              break;
+            }
+          }
+        }
+        if (aRow >= 0) break;
+      }
+    }
+
+    if(aRow < 0){ record.addon[name] = null; return; }
+    const rmkCol = aCol + 1;
+    record.addon[name] = {addonHdrRow: aRow, addonCol: aCol, rmkCol, items: [], detectedProduct: detProd};
+
+    const hRef = XLSX.utils.encode_cell({r: aRow, c: rmkCol});
+    ws[hRef] = {v: 'MGIL Remarks', t: 's', s: {
+      font: {bold: true, color: {rgb: 'FFFFFF'}, sz: 11},
+      fill: {patternType: 'solid', fgColor: {rgb: '0F4F30'}},
+      alignment: {horizontal: 'center', vertical: 'center'}
+    }};
+    
+    if(!record.inj[name]) record.inj[name] = {};
+    if(!record.inj[name][aRow]) record.inj[name][aRow] = {};
+    record.inj[name][aRow][rmkCol] = 'rmk-hdr';
+
+    let foundFirst = false;
+    let emptyStreak = 0;
+    let processedCovers = new Set(); 
+
+    for(let r = aRow + 1; r <= aRow + 100; r++){
+      const ref = XLSX.utils.encode_cell({r, c: aCol});
+      const cell = ws[ref];
+      const val = cell ? String(cell.v||'').trim() : '';
+      
+      if(!val){
+        if(foundFirst){
+          emptyStreak++;
+          if(emptyStreak > 5) break;
+        }
+        continue;
+      }
+      
+      const lowerVal = val.toLowerCase();
+      if(foundFirst && (
+         lowerVal.includes('insurance') || 
+         lowerVal.includes('insurnce') || 
+         lowerVal.includes('section') || 
+         lowerVal.includes('policy') || 
+         lowerVal.includes('schedule')
+      )) {
+         break; 
+      }
+
+      foundFirst = true;
+      emptyStreak = 0;
+
+      if (r === aRow) continue;
+
+      const normVal = normStr(val);
+      let remark = '';
+      let itype = 'rmk-mis';
+
+      if (processedCovers.has(normVal)) {
+          remark = 'Duplicate Entry';
+          itype = 'rmk-mis'; 
+      } else {
+          processedCovers.add(normVal);
+          remark = lookup[normVal];
+          
+          if (!remark) {
+              remark = 'Pls. Provide wording';
+              itype = 'rmk-mis';
+          } else {
+              if(remark.toLowerCase() === 'coverage as per mgil policy wording'){
+                 remark = `Coverage as per MGIL ${detProd} Policy wording`;
+              }
+              if(remark === 'Covered'){ itype = 'rmk-cov'; }
+              else if(remark.toLowerCase().startsWith('covered') && !remark.toLowerCase().includes('wording') && !remark.toLowerCase().includes('tariff')){ itype = 'rmk-par'; }
+              else if(remark.toLowerCase().includes('not covered')){ itype = 'rmk-not'; }
+              else { itype = 'rmk-pol'; }
+          }
+      }
+
+      const rmkRef = XLSX.utils.encode_cell({r, c: rmkCol});
+      let fill = 'FFFBEB', fc = '92400E', bold = false;
+      if(itype === 'rmk-cov'){ fill = 'D1FAE5'; fc = '166534'; bold = true; }
+      else if(itype === 'rmk-par'){ fill = 'FEF9C3'; fc = '854D0E'; }
+      else if(itype === 'rmk-not'){ fill = 'FFF1F2'; fc = '9F1239'; bold = true; }
+      else if(itype === 'rmk-pol'){ fill = 'EFF6FF'; fc = '1E40AF'; }
+
+      ws[rmkRef] = {v: remark, t: 's', s: {
+        font: {bold, color: {rgb: fc}, sz: 10},
+        fill: {patternType: 'solid', fgColor: {rgb: fill}},
+        alignment: {horizontal: 'left', vertical: 'center'}
+      }};
+      
+      if(!record.inj[name][r]) record.inj[name][r] = {};
+      record.inj[name][r][rmkCol] = itype;
+      
+      record.addon[name].items.push({r, cover: val, remark: remark, matched: (remark !== 'Pls. Provide wording' && remark !== 'Duplicate Entry')});
+    }
+
+    expandRange(ws, aRow, rmkCol);
+    if(!ws['!cols']) ws['!cols'] = [];
+    while(ws['!cols'].length <= rmkCol) ws['!cols'].push({});
+    ws['!cols'][rmkCol] = {wpx: 220};
+  });
+}
+
+function buildDedRows(deds,sid,name){
+  return deds.map((d,i)=>{
+    const dedCellDefault=suggestDedCell(name,i);
+    return `<div class="ded-box" id="ded-box-render-${sid}-${i}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px;flex-wrap:wrap">
+        <div style="flex:1;min-width:200px">
+          <span class="ded-prod">${d.product}</span>
+          <span class="ded-sec">${d.section}</span>
+          ${d.si?`<span style="font-size:10px;color:var(--txt3);margin-left:6px">SI: ₹${Number(d.si).toLocaleString('en-IN')}</span>`:''}
+          <div style="font-size:9px;color:var(--txt4);margin-top:1px">
+            SI Range: ₹${Number(d.minSI).toLocaleString('en-IN')} – ₹${Number(d.maxSI).toLocaleString('en-IN')}
+          </div>
+          <div class="ded-txt">${esc(d.text)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+          <span class="ilbl">Cell:</span>
+          <input class="iinp" id="ded-cell-${sid}-${i}" value="${dedCellDefault}" style="width:52px"/>
+          <button class="btn bg" style="padding:4px 11px;font-size:11px" onclick="doInjectDedRow('${name}','${sid}',${i})">↵ Inject</button>
+          <button class="btn br" style="padding:4px 8px;font-size:11px" title="Clear Injected Content" onclick="clearInjectedSegment('${name}','${sid}','ded-${i}')">✕ Clear</button>
+          <span id="ded-status-${sid}-${i}" style="font-size:11px;color:var(--grn);font-weight:500"></span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function refreshDedPanel(name,sid){
+  const sel=document.getElementById('ded-prod-'+sid);
+  if(!sel)return;
+  const prod=sel.value;
+  const{maxSI}=detectProductAndSI(name);
+  const deds=getDedForProduct(prod,maxSI);
+  const container=document.getElementById('ded-rows-'+sid);
+  if(!container)return;
+  container.innerHTML=deds.length ? buildDedRows(deds,sid,name) : `<div style="font-size:12px;color:var(--txt3);padding:8px;background:var(--surf);border-radius:5px">No deductibles mapped.</div>`;
+}
+
+function detectProductAndSI(name){
+  if (!WB || !WB.Sheets[name]) return {product:'', maxSI:0};
+  const ws=WB.Sheets[name];
+  let maxSI=0, product='';
+  Object.keys(ws).forEach(ref=>{
+    if(ref[0]==='!')return;
+    const cell=ws[ref];
+    const rawVal=cell.v;
+    const v=String(rawVal||'');
+    const n=typeof rawVal==='number'?rawVal:parseFloat(v.replace(/,/g,''));
+    if(!isNaN(n)&&n>=10000&&n>maxSI)maxSI=n;
+    const vl=v.toLowerCase();
+    if(vl.includes('bsus')||vl.includes('sookshma'))product=product||'BSUS';
+    else if(vl.includes('blus')||vl.includes('laghu'))product=product||'BLUS';
+    else if(vl.includes('sfsp')||vl.includes('standard fire'))product=product||'SFSP';
+    else if(vl==='iar'||vl.includes('iar ')||vl.includes('industrial all risk')||/\biar\b/.test(vl))product=product||'IAR';
+  });
+  return {product: product || 'BLUS', maxSI};
+}
+
+function getDedForProduct(product, maxSI){
+  if(!product)return[];
+  const prodKey=product.toLowerCase();
+  const exact=DED_DB.filter(d=>d.product.toLowerCase()===prodKey && maxSI>=d.minSI && maxSI<=d.maxSI);
+  if(exact.length) return exact.map(d=>({...d,si:maxSI}));
+  return DED_DB.filter(d=>d.product.toLowerCase()===prodKey).map(d=>({...d,si:maxSI}));
+}
+
+function detectAllDedsForRecord(record){
+  const targetWb = record.wb;
+  targetWb.SheetNames.forEach(name=>{
+    const ws=targetWb.Sheets[name];
+    let maxSI=0, product='';
+    if(ws) {
+      Object.keys(ws).forEach(ref=>{
+        if(ref[0]==='!')return;
+        const cell=ws[ref]; const rawVal=cell.v; const v=String(rawVal||'');
+        const n=typeof rawVal==='number'?rawVal:parseFloat(v.replace(/,/g,''));
+        if(!isNaN(n)&&n>=10000&&n>maxSI)maxSI=n;
+        const vl=v.toLowerCase();
+        if(vl.includes('bsus')||vl.includes('sookshma'))product=product||'BSUS';
+        else if(vl.includes('blus')||vl.includes('laghu'))product=product||'BLUS';
+        else if(vl.includes('sfsp')||vl.includes('standard fire'))product=product||'SFSP';
+        else if(vl==='iar'||/\biar\b/.test(vl))product=product||'IAR';
+      });
+    }
+    if(!product) product = 'BLUS';
+    record.dedDetect[name]=getDedForProduct(product,maxSI).map(d=>({...d,detectedProduct:product}));
+  });
+}
+
+function buildStep2(){
+  const selWrap=document.getElementById('sheet-sel');
+  selWrap.innerHTML='';
+  if(!WB) return;
+  
+  WB.SheetNames.forEach((name,i)=>{
+    const ai=ADDON[name];
+    const matched=ai?ai.items.filter(x=>x.matched).length:0;
+    const total=ai?ai.items.length:0;
+    const btn=document.createElement('div');
+    btn.className='ss-tab'+(name===ACTSH?' on':'');
+    btn.dataset.sheet=name;
+    btn.innerHTML=`<span>📄 ${esc(name)}</span><span class="cnt">${matched}/${total}</span>`;
+    btn.onclick=()=>switchSheetPanel(name);
+    selWrap.appendChild(btn);
+  });
+
+  const pWrap=document.getElementById('sheet-panels');
+  pWrap.innerHTML=''; 
+
+  const div=document.createElement('div');
+  div.className='shp on';
+  div.id='shp-'+safeId(ACTSH);
+  div.innerHTML=buildSheetPanelHTML(ACTSH);
+  pWrap.appendChild(div);
+
+  const sid = safeId(ACTSH);
+  refreshDedPanel(ACTSH, sid);
+}
+
+function switchSheetPanel(name){
+  ACTSH = name;
+  if(WORKBOOKS[FILE]) WORKBOOKS[FILE].activeSheet = name;
+  buildStep2();
+}
+
+function buildSheetPanelHTML(name){
+  const ai=ADDON[name];
+  let rmkHtml='<div class="sdiv"><div class="sdiv-line"></div><div class="sdiv-txt">💬 Add-On Cover Remarks</div><div class="sdiv-line"></div></div>';
+  if(!ai || !ai.items.length){
+    rmkHtml+=`<div class="rmk-status"><div class="title">⚠ No explicit "Add On cover" section found in this sheet</div></div>`;
+  } else {
+    const matched=ai.items.filter(x=>x.matched).length;
+    const missed=ai.items.filter(x=>!x.matched).length;
+    rmkHtml+=`<div class="rmk-status">
+      <div class="title">✅ Remarks auto-injected beside add-on items (Detected Product: <b>${ai.detectedProduct}</b>)
+        <div class="pills-row">
+          <span class="pill pill-g">✓ ${matched} Matched</span>
+          ${missed?`<span class="pill pill-o">⚠ ${missed} Wordings Required</span>`:''}
+        </div>
+      </div>
+      <div class="rmk-rows">
+        ${ai.items.map(item=>`
+          <div class="rmk-row">
+            <span class="rmk-cover">${esc(item.cover)}</span>
+            <span class="rmk-val ${item.remark === 'Duplicate Entry' ? 'rv-mis' : item.remark === 'Pls. Provide wording' ? 'rv-mis' : item.remark.toLowerCase().includes('not covered') ? 'rv-not' : item.remark.toLowerCase().startsWith('covered') ? 'rv-cov' : 'rv-par'}">
+              ${esc(item.remark)}
+            </span>
+          </div>`).join('')}
+      </div>
+    </div>`;
+  }
+
+  const sid=safeId(name);
+  const{product:autoProd,maxSI:autoSI}=detectProductAndSI(name);
+
+  let dedHtml=`<div class="sdiv"><div class="sdiv-line"></div><div class="sdiv-txt">📐 Deductibles</div><div class="sdiv-line"></div></div>
+  <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+    <span style="font-size:11px;color:var(--txt3)">Product:</span>
+    <select id="ded-prod-${sid}" onchange="refreshDedPanel('${name}','${sid}')"
+      style="height:26px;border:1px solid var(--bdr);border-radius:4px;font-size:11px;padding:0 6px;outline:none;background:#fff;color:var(--grn);font-weight:600">
+      <option value="BSUS" ${autoProd==='BSUS'?'selected':''}>BSUS</option>
+      <option value="BLUS" ${autoProd==='BLUS'?'selected':''}>BLUS</option>
+      <option value="SFSP" ${autoProd==='SFSP'?'selected':''}>SFSP</option>
+      <option value="IAR" ${autoProd==='IAR'?'selected':''}>IAR</option>
+    </select>
+    <span style="font-size:10px;color:var(--grn);background:var(--grn-bg);padding:2px 8px;border-radius:8px">Auto-detected: ${autoProd}</span>
+  </div>
+  <div id="ded-rows-${sid}"></div>`;
+
+  const tncCellDefault=suggestTNCCell(name);
+  let tncHtml=`<div class="sdiv"><div class="sdiv-line"></div><div class="sdiv-txt">📋 Terms &amp; Conditions</div><div class="sdiv-line"></div></div>
+  <div class="prods" id="prods-${sid}">
+    ${['BSUS','BLUS','SFSP','IAR','Burglary','MBD','EEI','FLOP'].map(p=>`<button class="pb" onclick="loadTNC('${p}','${sid}')">${p}</button>`).join('')}
+  </div>
+  <textarea class="ita" id="tnc-ta-${sid}" placeholder="Select product above to load T&amp;C text…"></textarea>
+  <div class="irow">
+    <span class="ilbl">Insert at cell:</span>
+    <input class="iinp" id="tnc-cell-${sid}" value="${tncCellDefault}"/>
+    <button class="btn bg" onclick="doInjectTNC('${name}','${sid}')">↵ Inject T&amp;C</button>
+    <button class="btn br" onclick="clearInjectedSegment('${name}','${sid}','tnc')">✕ Clear T&amp;C</button>
+    <span id="tnc-status-${sid}" style="font-size:11px;color:var(--grn);font-weight:500"></span>
+  </div>`;
+
+  return rmkHtml + dedHtml + tncHtml;
+}
+
+function loadTNC(prod,sid){
+  document.querySelectorAll(`#prods-${sid} .pb`).forEach(b=>b.classList.remove('sel'));
+  if(window.event && window.event.target) window.event.target.classList.add('sel');
+  document.getElementById('tnc-ta-'+sid).value=TNC[prod]||'';
+}
+
+function doInjectTNC(sheetName,sid){
+  if(!WB) return;
+  const text=(document.getElementById('tnc-ta-'+sid)?.value||'').trim();
+  if(!text){toast('Select text first');return;}
+  const cellRef=(document.getElementById('tnc-cell-'+sid)?.value||'B40').toUpperCase().trim();
+  const ws=WB.Sheets[sheetName];
+
+  try{
+    const addr=XLSX.utils.decode_cell(cellRef);
+    const lines=text.split('\n');
+    const mergeEnd=addr.c+5;
+    
+    if(!ws['!merges']) ws['!merges'] = [];
+    let cellsTracked = [];
+
+    lines.forEach((line,i)=>{
+      const r=addr.r+i, c=addr.c;
+      const ref=XLSX.utils.encode_cell({r,c});
+      cellsTracked.push(ref);
+      
+      const isHdr=i===0;
+      ws[ref]={v:line,t:'s',s:{
+        font:{bold:isHdr,color:{rgb:isHdr?'FFFFFF':'1E3A5F'},sz:isHdr?11:10},
+        fill:{patternType:'solid',fgColor:{rgb:isHdr?'1E3A5F':'EFF6FF'}},
+        alignment:{horizontal:isHdr?'center':'left',vertical:'center',wrapText:true}
+      }};
+      ws['!merges'].push({s:{r,c:addr.c},e:{r,c:mergeEnd}});
+      setINJ(sheetName,r,c,isHdr?'tnc-hdr':'tnc-v');
+      for(let cc=addr.c+1;cc<=mergeEnd;cc++) {
+        setINJ(sheetName,r,cc,'_skip');
+        cellsTracked.push(XLSX.utils.encode_cell({r,c:cc}));
+      }
+    });
+
+    saveTrackedInjections(sheetName, 'tnc', cellsTracked);
+    expandRange(ws,addr.r+lines.length-1,mergeEnd);
+    document.getElementById('tnc-status-'+sid).textContent='✓ Injected';
+    toast('✓ T&C injected');
+    generateProposalSummary();
+  }catch(e){toast('Injection error');}
+}
+
+function doInjectDedRow(sheetName,sid,i){
+  const sel=document.getElementById('ded-prod-'+sid);
+  const prod=sel?sel.value:'';
+  const{maxSI}=detectProductAndSI(sheetName);
+  const deds=getDedForProduct(prod,maxSI);
+  const ded=deds[i];
+  if(ded) doInjectDedData(sheetName,sid,i,ded);
+}
+
+function doInjectDedData(sheetName,sid,i,ded){
+  const cellRef=(document.getElementById(`ded-cell-${sid}-${i}`)?.value||'B28').toUpperCase().trim();
+  const ws=WB.Sheets[sheetName];
+
+  try{
+    const addr=XLSX.utils.decode_cell(cellRef);
+    const mergeEnd=addr.c+5;
+    if(!ws['!merges']) ws['!merges'] = [];
+
+    let cellsTracked = [];
+    const lines=[`DEDUCTIBLE — ${ded.product} (${ded.section})`,ded.text];
+    
+    lines.forEach((line,off)=>{
+      const r=addr.r+off, c=addr.c;
+      const ref=XLSX.utils.encode_cell({r,c});
+      cellsTracked.push(ref);
+      
+      const isHdr=off===0;
+      ws[ref]={v:line,t:'s',s:{
+        font:{bold:isHdr,color:{rgb:isHdr?'FFFFFF':'78350F'},sz:isHdr?11:10},
+        fill:{patternType:'solid',fgColor:{rgb:isHdr?'78350F':'FFFBEB'}},
+        alignment:{horizontal:isHdr?'center':'left',vertical:'center',wrapText:true}
+      }};
+      ws['!merges'].push({s:{r,c:addr.c},e:{r,c:mergeEnd}});
+      setINJ(sheetName,r,c,isHdr?'ded-hdr':'ded-v');
+      for(let cc=addr.c+1;cc<=mergeEnd;cc++) {
+        setINJ(sheetName,r,cc,'_skip');
+        cellsTracked.push(XLSX.utils.encode_cell({r,c:cc}));
+      }
+    });
+
+    saveTrackedInjections(sheetName, `ded-${i}`, cellsTracked);
+    expandRange(ws,addr.r+1,mergeEnd);
+    document.getElementById(`ded-status-${sid}-${i}`).textContent='✓ Injected';
+    toast('✓ Deductible Injected');
+    generateProposalSummary();
+  }catch(e){toast('Error injection cell');}
+}
+
+function saveTrackedInjections(sheet, key, cellRefs) {
+  if(!INJECTED_CELLS[sheet]) INJECTED_CELLS[sheet] = [];
+  INJECTED_CELLS[sheet] = INJECTED_CELLS[sheet].filter(x => x.key !== key);
+  INJECTED_CELLS[sheet].push({ key: key, cells: cellRefs });
+}
+
+function clearInjectedSegment(sheetName, sid, key) {
+  if (!WB || !WB.Sheets[sheetName]) return;
+  const ws = WB.Sheets[sheetName];
+  const list = INJECTED_CELLS[sheetName] || [];
+  const target = list.find(x => x.key === key);
+
+  if (!target || !target.cells.length) {
+    toast("⚠ Clear fail: No previous injection metadata found");
+    return;
+  }
+
+  target.cells.forEach(ref => {
+    if(ws[ref]) delete ws[ref];
+    const addr = XLSX.utils.decode_cell(ref);
+    if(INJ[sheetName] && INJ[sheetName][addr.r]) {
+      if(INJ[sheetName][addr.r][addr.c]) delete INJ[sheetName][addr.r][addr.c];
+    }
+  });
+
+  if(key === 'tnc') {
+    const el = document.getElementById('tnc-status-'+sid);
+    if(el) el.textContent = '✕ Cleared';
+    const ta = document.getElementById('tnc-ta-'+sid);
+    if(ta) ta.value = '';
+  } else if(key.startsWith('ded-')) {
+    const idx = key.split('-')[1];
+    const el = document.getElementById(`ded-status-${sid}-${idx}`);
+    if(el) el.textContent = '✕ Cleared';
+  }
+
+  INJECTED_CELLS[sheetName] = INJECTED_CELLS[sheetName].filter(x => x.key !== key);
+  toast("✓ Clear completed successfully");
+  generateProposalSummary();
+}
+
+function generateProposalSummary() {
+  if(Object.keys(WORKBOOKS).length === 0) return;
+  
+  document.getElementById('sum-filename').textContent = `Cross-Portfolio Analysis Cluster Log (${Object.keys(WORKBOOKS).length} Active Books Managed)`;
+  const tbody = document.getElementById('sum-tbody');
+  tbody.innerHTML = '';
+
+  let uniqueInsureds = new Set();
+  let distinctLocations = new Set();
+  let totalPortfolioTSI = 0;
+  let summaryRowsHtml = '';
+
+  Object.keys(WORKBOOKS).forEach(fileKey => {
+    const record = WORKBOOKS[fileKey];
+    const targetWb = record.wb;
+    
+    targetWb.SheetNames.forEach(name => {
+      const ws = targetWb.Sheets[name];
+      if(!ws) return;
+
+      let insuredName = "Not Detected";
+      let locationProfile = "Main Premium Site";
+      let occupancyClass = "General Risk / Office Warehouse";
+      let sumInsured = 0;
+      let claimsStatus = "No Historical Records Flagged";
+      let natcatExposure = "Standard Perils Profile (Zone III/IV)";
+
+      Object.keys(ws).forEach(ref => {
+        if(ref[0] === '!') return;
+        const cell = ws[ref];
+        const textVal = String(cell.v || '').trim();
+        const txtLower = textVal.toLowerCase();
+
+        if(txtLower.includes('insured name') || txtLower.includes('name of insured') || txtLower.includes('client name')) {
+          insuredName = lookBesideOrBelow(ws, ref) || insuredName;
+        }
+        if(txtLower.includes('risk location') || txtLower.includes('location of risk') || txtLower.includes('site address') || txtLower.includes('location address')) {
+          locationProfile = lookBesideOrBelow(ws, ref) || locationProfile;
+        }
+        if(txtLower.includes('occupancy') || txtLower.includes('risk occupancy') || txtLower.includes('nature of business')) {
+          occupancyClass = lookBesideOrBelow(ws, ref) || occupancyClass;
+        }
+        if(txtLower.includes('claim history') || txtLower.includes('claims summary') || txtLower.includes('loss history') || txtLower.includes('past claims')) {
+          claimsStatus = lookBesideOrBelow(ws, ref) || claimsStatus;
+        }
+      });
+
+      let detectedTSIValues = [];
+      Object.keys(ws).forEach(ref => {
+        if(ref[0] === '!') return;
+        const cell = ws[ref];
+        const textVal = String(cell.v || '').trim();
+        const txtLower = textVal.toLowerCase();
+        
+        if(txtLower.includes('total sum insured') || txtLower.includes('total tsi') || txtLower.includes('aggregate tsi') || txtLower.includes('sum insured (rs)')) {
+          let numericTSI = lookBesideOrBelowNumeric(ws, ref);
+          if(numericTSI > 0) detectedTSIValues.push(numericTSI);
+        }
+      });
+
+      if(detectedTSIValues.length > 0) {
+        sumInsured = Math.max(...detectedTSIValues);
+      } else {
+        let maxSI=0;
+        Object.keys(ws).forEach(ref=>{
+          if(ref[0]==='!')return;
+          const rawVal=ws[ref].v; const v=String(rawVal||'');
+          const n=typeof rawVal==='number'?rawVal:parseFloat(v.replace(/,/g,''));
+          if(!isNaN(n)&&n>=10000&&n>maxSI) maxSI=n;
+        });
+        sumInsured = maxSI;
+      }
+
+      const locString = locationProfile.toLowerCase();
+      if(locString.includes('gujarat') || locString.includes('amdavad') || locString.includes('ahmedabad') || locString.includes('bhuj') || locString.includes('kutch') || locString.includes('morbi')) {
+        natcatExposure = "HIGH RISK — Zone V (EQ) / Cyclone Alert Coastal Belt";
+      } else if(locString.includes('mumbai') || locString.includes('maharashtra') || locString.includes('chennai') || locString.includes('kolkata')) {
+        natcatExposure = "MODERATE TO HIGH RISK — High Flood Zone / Heavy Precipitation Perils";
+      } else if(locString.includes('delhi') || locString.includes('ncr') || locString.includes('haryana')) {
+        natcatExposure = "ELEVATED CONCERN — High Density Seismic Zone IV Track";
+      } else if(locString.includes('bengaluru') || locString.includes('bangalore') || locString.includes('hyderabad')) {
+        natcatExposure = "LOW EXPOSURE PROFILE — Stable Craton Shield Area Terrain";
+      }
+
+      if(insuredName !== "Not Detected") uniqueInsureds.add(insuredName.toUpperCase());
+      if(locationProfile !== "Main Premium Site") distinctLocations.add(locationProfile.toUpperCase());
+      totalPortfolioTSI += sumInsured;
+
+      const doggerStyle = natcatExposure.includes('HIGH RISK') ? 'badge-aog' : 'badge-normal';
+
+      summaryRowsHtml += `<tr>
+        <td style="font-weight:700;color:var(--txt3);font-family:'JetBrains Mono',monospace">${esc(fileKey)}</td>
+        <td style="font-weight:600;color:var(--blue-dk)">${esc(name)}</td>
+        <td style="font-weight:600">${esc(insuredName)}</td>
+        <td>${esc(locationProfile)}</td>
+        <td style="font-style:italic">${esc(occupancyClass)}</td>
+        <td style="font-weight:700;color:var(--grn-dk)">₹${sumInsured ? sumInsured.toLocaleString('en-IN') : '0.00'}</td>
+        <td>${esc(claimsStatus)}</td>
+        <td><span class="${doggerStyle}">${esc(natcatExposure)}</span></td>
+      </tr>`;
+    });
+  });
+
+  tbody.innerHTML = summaryRowsHtml;
+  document.getElementById('sum-stat-insured').textContent = uniqueInsureds.size || (Object.keys(WORKBOOKS).length ? "Multi-Entity Cluster" : "0");
+  document.getElementById('sum-stat-locs').textContent = distinctLocations.size || "Multi-Site Distribution";
+  document.getElementById('sum-stat-tsi').textContent = `₹${totalPortfolioTSI.toLocaleString('en-IN')}`;
+}
+
+function lookBesideOrBelow(ws, ref) {
+  const cellObj = XLSX.utils.decode_cell(ref);
+  let rightRef = XLSX.utils.encode_cell({ r: cellObj.r, c: cellObj.c + 1 });
+  if (ws[rightRef] && String(ws[rightRef].v).trim().length > 1) {
+    return String(ws[rightRef].v).trim();
+  }
+  let downRef = XLSX.utils.encode_cell({ r: cellObj.r + 1, c: cellObj.c });
+  if (ws[downRef] && String(ws[downRef].v).trim().length > 1) {
+    return String(ws[downRef].v).trim();
+  }
+  return null;
+}
+
+function lookBesideOrBelowNumeric(ws, ref) {
+  const cellObj = XLSX.utils.decode_cell(ref);
+  let rightRef = XLSX.utils.encode_cell({ r: cellObj.r, c: cellObj.c + 1 });
+  if (ws[rightRef] && ws[rightRef].v) {
+    let n = parseFloat(String(ws[rightRef].v).replace(/,/g, ''));
+    if(!isNaN(n)) return n;
+  }
+  let downRef = XLSX.utils.encode_cell({ r: cellObj.r + 1, c: cellObj.c });
+  if (ws[downRef] && ws[downRef].v) {
+    let n = parseFloat(String(ws[downRef].v).replace(/,/g, ''));
+    if(!isNaN(n)) return n;
+  }
+  return 0;
+}
+
+function setINJ(sheet,r,c,type){
+  if(!INJ[sheet])INJ[sheet]={};
+  if(!INJ[sheet][r])INJ[sheet][r]={};
+  INJ[sheet][r][c]=type;
+}
+
+function expandRange(ws,newR,newC){
+  const rng=ws['!ref']?XLSX.utils.decode_range(ws['!ref']):{s:{r:0,c:0},e:{r:0,c:0}};
+  if(newR>rng.e.r)rng.e.r=newR;
+  if(newC>rng.e.c)rng.e.c=newC;
+  ws['!ref']=XLSX.utils.encode_range(rng);
+}
+
+function suggestDedCell(name,i){
+  const ai=ADDON[name];
+  if(!ai||!ai.items.length){
+    const ws=WB.Sheets[name];
+    if(!ws)return 'B28';
+    const rng=XLSX.utils.decode_range(ws['!ref']||'A1:A1');
+    return 'B'+(rng.e.r+3+i*3);
+  }
+  return 'B'+(Math.max(...ai.items.map(x=>x.r))+3+i*3);
+}
+
+function suggestTNCCell(name){
+  const ai=ADDON[name];
+  if(!ai||!ai.items.length){
+    const ws=WB.Sheets[name];
+    if(!ws)return 'B40';
+    const rng=XLSX.utils.decode_range(ws['!ref']||'A1:A1');
+    return 'B'+(rng.e.r+12);
+  }
+  return 'B'+(Math.max(...ai.items.map(x=>x.r))+12);
+}
+
+function safeId(name){return name.replace(/[^a-zA-Z0-9]/g,'_');}
+
+function navigateTabs(action){
+  if(!WB || !WB.SheetNames.length) return;
+  const currentIdx = WB.SheetNames.indexOf(ACTSH);
+  if(currentIdx < 0) return;
+  
+  if(action === 'first') switchSheetPanel(WB.SheetNames[0]);
+  else if(action === 'last') switchSheetPanel(WB.SheetNames[WB.SheetNames.length - 1]);
+  else if(action === 'prev' && currentIdx > 0) switchSheetPanel(WB.SheetNames[currentIdx - 1]);
+  else if(action === 'next' && currentIdx < WB.SheetNames.length - 1) switchSheetPanel(WB.SheetNames[currentIdx + 1]);
+}
+
+function renderSheet(name){
+  ACTSH=name;
+  if(WORKBOOKS[FILE]) WORKBOOKS[FILE].activeSheet = name;
+  
+  const ws=WB.Sheets[name];
+  if(!ws){document.getElementById('tsc').innerHTML='';return;}
+
+  const rng=ws['!ref']?XLSX.utils.decode_range(ws['!ref']):{s:{r:0,c:0},e:{r:0,c:0}};
+  const R1=rng.s.r,R2=rng.e.r,C1=rng.s.c,C2=rng.e.c;
+
+  const skip=new Set(), span={};
+  if(ws['!merges'])ws['!merges'].forEach(m=>{
+    span[m.s.r+'_'+m.s.c]={rs:m.e.r-m.s.r+1,cs:m.e.c-m.s.c+1};
+    for(let rr=m.s.r;rr<=m.e.r;rr++)
+      for(let cc=m.s.c;cc<=m.e.c;cc++)
+        if(!(rr===m.s.r&&cc===m.s.c))skip.add(rr+'_'+cc);
+  });
+
+  const cw=ws['!cols']||[];
+  const injSh=INJ[name]||{};
+
+  let h='<table class="xl"><thead><tr><th class="corner"></th>';
+  for(let c=C1;c<=C2;c++){
+    const w=cw[c]?(cw[c].wpx||80):80;
+    h+=`<th class="xch" style="width:${w}px">${XLSX.utils.encode_col(c)}</th>`;
+  }
+  h+='</tr></thead><tbody>';
+
+  for(let r=R1;r<=R2;r++){
+    h+=`<tr style="height:22px"><td class="xrn">${r+1}</td>`;
+    for(let c=C1;c<=C2;c++){
+      if(skip.has(r+'_'+c))continue;
+      const ref=XLSX.utils.encode_cell({r,c});
+      const cell=ws[ref];
+      const v=cellVal(cell);
+      const m=span[r+'_'+c];
+      const cspan=m&&m.cs>1?` colspan="${m.cs}"`:'';
+      const rspan=m&&m.rs>1?` rowspan="${m.rs}"`:'';
+      const w=cw[c]?(cw[c].wpx||80):80;
+
+      const injType=injSh[r]?.[c];
+      if(injType==='_skip')continue;
+
+      const cls=injType?`xc ${injType}`:'xc';
+      let style=`min-width:${w}px;width:${w}px;max-width:${w}px;`;
+      if(injType==='tnc-v'||injType==='ded-v') style+='white-space:normal;word-break:break-word;height:auto;';
+
+      h+=`<td class="${cls}" style="${style}" title="${esc(v)}"${cspan}${rspan}>${esc(v)}</td>`;
+    }
+    h+='</tr>';
+  }
+  h+='</tr></tbody></table>';
+  document.getElementById('tsc').innerHTML=h;
+  renderSheetTabs();
+}
+
+function cellVal(cell){
+  if(!cell||cell.v===undefined||cell.v===null)return '';
+  return String(cell.v||'');
+}
+
+function renderSheetTabs(){
+  const el=document.getElementById('shtabs');el.innerHTML='';
+  if(!WB)return;
+  WB.SheetNames.forEach(n=>{
+    const b=document.createElement('button');
+    b.className='sh-tab'+(n===ACTSH?' on':'');
+    b.textContent=n;
+    b.onclick=()=>{renderSheet(n);};
+    el.appendChild(b);
+  });
+}
+
+function gStep(n){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('on'));
+  document.getElementById('p3').classList.remove('on');
+  document.getElementById('p4').classList.remove('on');
+  document.querySelectorAll('.stp').forEach(s=>s.classList.remove('on','dn'));
+  
+  if(n===3){
+    document.getElementById('p3').classList.add('on');
+    renderSheet(ACTSH);
+    if(CURRENT_USER_ROLE === "underwriter") {
+       document.getElementById('dl-bar').style.display='flex';
+    }
+  } else if(n===4) {
+    document.getElementById('p4').classList.add('on');
+    generateProposalSummary();
+  } else {
+    document.getElementById('p'+n).classList.add('on');
+    if(n===2) buildStep2();
+  }
+  document.getElementById('st'+n).classList.add('on');
+}
+
+let dbOpen=false;
+function toggleDB(){
+  dbOpen=!dbOpen;
+  document.getElementById('db-card').style.display=dbOpen?'block':'none';
+  if(dbOpen)renderDBT();
+}
+
+function renderDBT(){
+  const tb=document.getElementById('db-tbody');tb.innerHTML='';
+  DB.forEach((e,i)=>{
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td>${i+1}</td><td>${esc(e.cover)}</td><td>${esc(e.remark)}</td><td><button class="bdel" onclick="delE(${i})">✕</button></td>`;
+    tb.appendChild(tr);
+  });
+  updBadge();
+}
+
+function delE(i){
+  DB.splice(i,1); saveDB(); 
+  if(Object.keys(WORKBOOKS).length > 0){
+    Object.keys(WORKBOOKS).forEach(k => {
+      injectAllRemarksForRecord(WORKBOOKS[k]);
+    });
+    synchronizeStatePointersWithActiveFile();
+    buildStep2(); 
+    generateProposalSummary();
+  }
+}
+
+function addE(){
+  const c=document.getElementById('nc').value.trim();
+  const t=document.getElementById('nrt').value;
+  const cust=document.getElementById('ncust').value.trim();
+  if(!c)return;
+  
+  let finalRemark=t;
+  if(t==='policy') finalRemark='Coverage as per MGIL Policy wording';
+  else if(t==='custom') finalRemark=cust?cust:'Covered';
+
+  if(DB.some(e=>normStr(e.cover)===normStr(c))){toast('Already in DB');return;}
+  DB.push({cover:c,remark:finalRemark});saveDB();
+  
+  document.getElementById('nc').value='';
+  document.getElementById('ncust').value='';
+  
+  if(Object.keys(WORKBOOKS).length > 0){
+    Object.keys(WORKBOOKS).forEach(k => {
+      injectAllRemarksForRecord(WORKBOOKS[k]);
+    });
+    synchronizeStatePointersWithActiveFile();
+    buildStep2(); 
+    generateProposalSummary();
+  }
+  toast('✓ Added &amp; Updated Database Parameters: '+c);
+}
+
+function doDownload(){
+  if(!WB){toast('No file loaded');return;}
+  const out = XLSX.utils.book_new();
+  WB.SheetNames.forEach(name=>{
+    const ws = WB.Sheets[name];
+    if(ws) XLSX.utils.book_append_sheet(out, ws, name);
+  });
+  const fname = FILE.replace(/\.(xlsx|xls)$/i,'') + '_Processed.xlsx';
+  XLSX.writeFile(out, fname, {bookType:'xlsx', type:'binary', cellStyles:true});
+  toast('✓ Downloaded Processed Workbook: ' + fname);
+}
+
+function doDownloadAllFiles() {
+  const keys = Object.keys(WORKBOOKS);
+  if(keys.length === 0) { toast('No files to export'); return; }
+  
+  keys.forEach(fileKey => {
+    const record = WORKBOOKS[fileKey];
+    const out = XLSX.utils.book_new();
+    record.wb.SheetNames.forEach(name => {
+      const ws = record.wb.Sheets[name];
+      if(ws) XLSX.utils.book_append_sheet(out, ws, name);
+    });
+    const fname = fileKey.replace(/\.(xlsx|xls)$/i,'') + '_Processed.xlsx';
+    XLSX.writeFile(out, fname, {bookType:'xlsx', type:'binary', cellStyles:true});
+  });
+  toast('✓ Exported ' + keys.length + ' separate processed books directly.');
+}
+
+function esc(s){
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;
+  el.style.opacity='1';
+  setTimeout(()=>el.style.opacity='0',2000);
+}
+
+// TRIGGER INITIAL INITIALIZATION DATA ROUTE
+toggleUserWorkspaceRole("underwriter");
+updBadge();
+</script>
+</body>
+</html>
